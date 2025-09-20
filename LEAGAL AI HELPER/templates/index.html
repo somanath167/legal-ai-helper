@@ -1,0 +1,333 @@
+<script>
+  let termsAgreed = false;
+
+  function switchTab(tabId) {
+    clearResult();
+    document.getElementById("textTab").style.display = "none";
+    document.getElementById("uploadTab").style.display = "none";
+    document.getElementById("qaTab").style.display = "none";
+    let tabs = document.getElementsByClassName("tab");
+    for (let i = 0; i < tabs.length; i++) {
+      tabs[i].classList.remove("active");
+      tabs[i].setAttribute("aria-selected", "false");
+    }
+    document.getElementById(tabId).style.display = "block";
+    event.target.classList.add("active");
+    event.target.setAttribute("aria-selected", "true");
+  }
+
+  function confirmTerms() {
+    if (document.getElementById("termsAgreement").checked) {
+      termsAgreed = true;
+      document.getElementById("confirmTermsBtn").disabled = true;
+      document.getElementById("termsAgreement").disabled = true;
+      enableButtons();
+      alert("Terms and conditions agreed. You can now use the tool.");
+    } else {
+      alert("Please agree to the terms and conditions.");
+    }
+  }
+
+  function enableButtons() {
+    document.getElementById("analyzeBtn").classList.remove("disabled");
+    document.getElementById("clearTextBtn").classList.remove("disabled");
+    document.getElementById("compareBtn").classList.remove("disabled");
+    document.getElementById("clearFilesBtn").classList.remove("disabled");
+    document.getElementById("askQuestionBtn").classList.remove("disabled");
+    document.getElementById("clearQABtn").classList.remove("disabled");
+    document.getElementById("askResultBtn").classList.remove("disabled");
+    document.getElementById("downloadBtn").classList.remove("disabled");
+    document.getElementById("resetAllBtn").classList.remove("disabled");
+  }
+
+  function disableButtons() {
+    document.getElementById("analyzeBtn").classList.add("disabled");
+    document.getElementById("clearTextBtn").classList.add("disabled");
+    document.getElementById("compareBtn").classList.add("disabled");
+    document.getElementById("clearFilesBtn").classList.add("disabled");
+    document.getElementById("askQuestionBtn").classList.add("disabled");
+    document.getElementById("clearQABtn").classList.add("disabled");
+    document.getElementById("askResultBtn").classList.add("disabled");
+    document.getElementById("downloadBtn").classList.add("disabled");
+    document.getElementById("resetAllBtn").classList.add("disabled");
+  }
+
+  document.getElementById("termsAgreement").addEventListener("change", function() {
+    document.getElementById("confirmTermsBtn").disabled = !this.checked;
+  });
+
+  async function analyzeText() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    let text = document.getElementById("legalText").value;
+    if (!text) {
+      alert("Please enter some text to analyze.");
+      return;
+    }
+    try {
+      let res = await fetch("/analyze", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text})
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+      let data = await res.json();
+      displayResult(data);
+      speakResult(data.summary); // Speak summary as an example
+    } catch (e) {
+      alert("Error analyzing text: " + e.message);
+      console.error("Fetch error details:", e);
+    }
+  }
+
+  async function compareDocuments() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    let files = document.getElementById("fileInputs").files;
+    if (!files.length) {
+      alert("Please select at least one PDF file.");
+      return;
+    }
+    document.getElementById("progress").style.display = "block";
+    let formData = new FormData();
+    for (let file of files) formData.append("files", file);
+    try {
+      let res = await fetch("/compare", {method: "POST", body: formData});
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+      let data = await res.json();
+      displayComparison(data);
+      if (data.summary) speakResult(data.summary[0]); // Speak first summary
+    } catch (e) {
+      alert("Error comparing documents: " + e.message);
+      console.error("Fetch error details:", e);
+    } finally {
+      document.getElementById("progress").style.display = "none";
+    }
+  }
+
+  async function askQuestion() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    let text = document.getElementById("qaText").value;
+    let question = document.getElementById("question").value;
+    let context = document.getElementById("followup").innerText || "";
+    if (!text || !question) {
+      alert("Please provide both contract text and a question.");
+      return;
+    }
+    try {
+      let res = await fetch("/qa", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text, question, context})
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+      let data = await res.json();
+      document.getElementById("followup").innerHTML += `<p class="mt-2"><b>Q:</b> ${question}<br><b>A:</b> ${data.answer}</p>`;
+      speakResult(data.answer); // Speak the answer
+      document.getElementById("question").value = "";
+    } catch (e) {
+      alert("Error asking question: " + e.message);
+      console.error("Fetch error details:", e);
+    }
+  }
+
+  async function askResultQuestion() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    let data = JSON.parse(document.getElementById("data").textContent || "{}");
+    let text = data.summary ? (Array.isArray(data.summary) ? data.summary.join("\n") : data.summary) : "";
+    let question = document.getElementById("resultQuestion").value;
+    let context = document.getElementById("resultFollowup").innerText || "";
+    if (!text || !question) {
+      alert("Please perform an analysis or comparison and provide a question.");
+      return;
+    }
+    try {
+      let res = await fetch("/qa", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text, question, context})
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+      let data = await res.json();
+      document.getElementById("resultFollowup").innerHTML += `<p class="mt-2"><b>Q:</b> ${question}<br><b>A:</b> ${data.answer}</p>`;
+      speakResult(data.answer); // Speak the answer
+      document.getElementById("resultQuestion").value = "";
+    } catch (e) {
+      alert("Error asking question: " + e.message);
+      console.error("Fetch error details:", e);
+    }
+  }
+
+  function startVoiceInput(section) {
+    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      alert('Speech recognition not supported in this browser.');
+      return;
+    }
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      if (section === 'qa') {
+        document.getElementById("question").value = text;
+        askQuestion();
+      } else if (section === 'result') {
+        document.getElementById("resultQuestion").value = text;
+        askResultQuestion();
+      } else {
+        document.getElementById("legalText").value = text;
+        analyzeText();
+      }
+    };
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+    };
+    recognition.start();
+  }
+
+  function speakResult(text) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Text-to-speech not supported in this browser.');
+    }
+  }
+
+  // Update voice input buttons
+  document.querySelectorAll('button[aria-label="Voice Input"]').forEach(btn => {
+    btn.onclick = () => startVoiceInput(btn.getAttribute('style').includes('qa') ? 'qa' : 'result');
+  });
+  document.getElementById("analyzeBtn").addEventListener("click", () => {
+    if (termsAgreed && !document.getElementById("legalText").value) startVoiceInput('text');
+  });
+
+  async function downloadReport() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    let data = JSON.parse(document.getElementById("data").textContent || "{}");
+    if (Object.keys(data).length === 0) {
+      alert("No data available to download. Please perform an analysis first.");
+      return;
+    }
+    try {
+      let res = await fetch("/download", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        let errorText = await res.text();
+        throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
+      }
+      let blob = await res.blob();
+      let link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "legal_analysis.pdf";
+      link.click();
+    } catch (e) {
+      alert("Error downloading report: " + e.message);
+      console.error("Download error details:", e);
+    }
+  }
+
+  function displayResult(data) {
+    if (data.result) {
+      document.getElementById("result").innerHTML = `<p style="color: #dc2626;">${data.result}</p>`;
+      document.getElementById("data").textContent = "{}";
+      return;
+    }
+    let box = document.getElementById("result");
+    document.getElementById("data").textContent = JSON.stringify(data);
+    box.innerHTML = `
+      <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${data.summary || "No summary"}');">📋 Summary</div>
+      <div class="content">${data.summary || "No summary"}</div>
+      <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${JSON.stringify(data.clauses || {})}');">📑 Key Clauses</div>
+      <div class="content"><ul>${Object.entries(data.clauses || {}).map(([k,v]) => `<li>${k}: ${v}</li>`).join('') || "<li>No clauses</li>"}</ul></div>
+      <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${data.risk?.level || "N/A"} (Score: ${data.risk?.score || "N/A"})');">⚖️ Risk Level</div>
+      <div class="content">${data.risk?.level || "N/A"} (Score: ${data.risk?.score || "N/A"})</div>
+      <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${data.simplified || "No simplification"}');">🟢 Simplified Version</div>
+      <div class="content">${data.simplified || "No simplification"}</div>
+      <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('Risk Heatmap');">🔥 Risk Heatmap</div>
+      <div class="content">${data.highlighted || "No heatmap"}</div>
+    `;
+  }
+
+  function displayComparison(data) {
+    let box = document.getElementById("result");
+    document.getElementById("data").textContent = JSON.stringify(data);
+    box.innerHTML = "";
+    data.summary.forEach((summary, i) => {
+      box.innerHTML += `
+        <h3 style="font-size: 1.125rem; font-weight: bold; margin-top: 1rem; color: #2A6EBB;">Document ${i+1}</h3>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${summary || "No summary"}');">📋 Summary</div>
+        <div class="content">${summary || "No summary"}</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${JSON.stringify(data.clauses[i] || {})}');">📑 Key Clauses</div>
+        <div class="content"><ul>${Object.entries(data.clauses[i] || {}).map(([k,v]) => `<li>${k}: ${v}</li>`).join('') || "<li>No clauses</li>"}</ul></div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementById('simplified'); content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${data.risk[i]?.level || "N/A"} (Score: ${data.risk[i]?.score || "N/A"})');">⚖️ Risk Level</div>
+        <div class="content">${data.risk[i]?.level || "N/A"} (Score: ${data.risk[i]?.score || "N/A"})</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('${data.simplified[i] || "No simplification"}');">🟢 Simplified Version</div>
+        <div class="content">${data.simplified[i] || "No simplification"}</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block'; speakResult('Risk Heatmap');">🔥 Risk Heatmap</div>
+        <div class="content">${data.highlighted[i] || "No heatmap"}</div>
+      `;
+    });
+  }
+
+  function clearText() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    document.getElementById("legalText").value = "";
+    clearResult();
+  }
+  function clearFiles() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    document.getElementById("fileInputs").value = "";
+    clearResult();
+  }
+  function clearQA() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    document.getElementById("qaText").value = "";
+    document.getElementById("question").value = "";
+    document.getElementById("followup").innerHTML = "";
+    clearResult();
+  }
+  function clearResult() { document.getElementById("result").innerHTML = ""; document.getElementById("data").textContent = "{}"; document.getElementById("resultQuestion").value = ""; document.getElementById("resultFollowup").innerHTML = ""; }
+  function resetAll() {
+    if (!termsAgreed) {
+      alert("Please agree to the terms and conditions first.");
+      return;
+    }
+    clearText();
+    clearFiles();
+    clearQA();
+    clearResult();
+    document.getElementById("followup").innerHTML = "";
+    termsAgreed = false;
+    document.getElementById("termsAgreement").disabled = false;
+    document.getElementById("confirmTermsBtn").disabled = false;
+    disableButtons();
+  }
+</script>
