@@ -182,6 +182,10 @@ def export_to_pdf(content):
 def home():
     return render_template('index.html')
 
+@app.route('/app')
+def app_page():
+    return render_template('app.html')
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     data = request.json
@@ -191,7 +195,6 @@ def analyze():
 
 @app.route('/voice', methods=['POST'])
 def voice():
-    # Placeholder; voice handled client-side
     return jsonify({"result": "Voice input handled client-side."})
 
 @app.route('/compare', methods=['POST'])
@@ -271,7 +274,6 @@ def download():
 
 @app.route('/voice_output', methods=['POST'])
 def voice_output_route():
-    # Placeholder; voice handled client-side
     return jsonify({"status": "Voice output handled client-side."})
 
 if __name__ == '__main__':
