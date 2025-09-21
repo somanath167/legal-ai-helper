@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚖️ Legal AI Helper</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&family=Open+Sans&display=swap');
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: linear-gradient(135deg, #D1E8FF 0%, #1E3A8A 100%);
+      color: #1E293B;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 25px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 15px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      background-color: rgba(255, 255, 255, 0.7);
+      color: #1E3A8A;
+      font-family: 'Roboto', sans-serif;
+      font-weight: bold;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid #93C5FD;
+    }
+    .tab.active {
+      background-color: #60A5FA;
+      color: #FFFFFF;
+      border-color: #3B82F6;
+    }
+    .tab:hover {
+      background-color: #93C5FD;
+      color: #1E293B;
+    }
+    .card {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 1.5rem;
+    }
+    textarea, input[type="file"], input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #FFFFFF;
+      color: #1E293B;
+      border: 1px solid #E0E7FF;
+      border-radius: 6px;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+    textarea:focus, input[type="file"]:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: #60A5FA;
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    }
+    button {
+      background-color: #60A5FA;
+      color: #FFFFFF;
+      font-family: 'Roboto', sans-serif;
+      font-size: 1rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #3B82F6;
+    }
+    button:disabled {
+      background-color: #9CA3AF;
+      cursor: not-allowed;
+    }
+    .collapsible {
+      background-color: rgba(255, 255, 255, 0.7);
+      color: #1E3A8A;
+      font-family: 'Roboto', sans-serif;
+      padding: 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .collapsible:hover {
+      background-color: #93C5FD;
+    }
+    .collapsible.active {
+      background-color: #3B82F6;
+      color: #FFFFFF;
+    }
+    .content {
+      padding: 1rem;
+      color: #1E293B;
+    }
+    .highlight-low {
+      background-color: #10B981;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+    .highlight-medium {
+      background-color: #F59E0B;
+      color: black;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+    .highlight-high {
+      background-color: #DC2626;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }
+    .legend {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+    .legend span {
+      margin-right: 1rem;
+    }
+    .progress {
+      color: #1E3A8A;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    .disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    @media (max-width: 768px) {
+      .container {
+        margin: 1rem;
+        padding: 1rem;
+      }
+      .tabs {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+      .tab {
+        width: 80%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Legal AI Helper Container">
+    <h1 style="font-size: 2.5rem; font-weight: bold; color: #FFFFFF; margin-bottom: 1.5rem; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">⚖️ Legal AI Helper</h1>
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <div class="tab active" role="tab" aria-selected="true" aria-controls="textTab" onclick="switchTab('textTab')">📄 Text Analysis</div>
+      <div class="tab" role="tab" aria-selected="false" aria-controls="uploadTab" onclick="switchTab('uploadTab')">📂 Compare Documents</div>
+      <div class="tab" role="tab" aria-selected="false" aria-controls="qaTab" onclick="switchTab('qaTab')">❓ Ask Questions</div>
+    </div>
+
+    <!-- Text Analysis -->
+    <div id="textTab" class="card" role="tabpanel" aria-labelledby="textTab">
+      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1E3A8A;">📄 Text Analysis</h2>
+      <textarea id="legalText" rows="6" placeholder="Paste your legal text here..." aria-label="Legal Text Input" class="resize-y"></textarea>
+      <button onclick="analyzeText()" aria-label="Analyze Text" id="analyzeBtn" class="disabled">Analyze</button>
+      <button onclick="clearText()" aria-label="Clear Text" id="clearTextBtn" class="disabled">Clear</button>
+      <button onclick="voiceInput('text')" aria-label="Voice Input" style="padding: 0.5rem 1rem; margin-left: 0.5rem;">🎙️</button>
+    </div>
+
+    <!-- Compare Documents -->
+    <div id="uploadTab" class="card" style="display:none;" role="tabpanel" aria-labelledby="uploadTab">
+      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1E3A8A;">📂 Compare Documents</h2>
+      <input type="file" id="fileInputs" accept=".pdf" multiple aria-label="Upload PDF Files">
+      <div class="progress" id="progress">Processing files...</div>
+      <button onclick="compareDocuments()" aria-label="Compare Documents" id="compareBtn" class="disabled">Compare</button>
+      <button onclick="clearFiles()" aria-label="Clear Files" id="clearFilesBtn" class="disabled">Clear</button>
+    </div>
+
+    <!-- Q&A -->
+    <div id="qaTab" class="card" style="display:none;" role="tabpanel" aria-labelledby="qaTab">
+      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1E3A8A;">❓ Ask Questions</h2>
+      <textarea id="qaText" rows="6" placeholder="Paste your contract here for Q&A..." aria-label="Contract Text Input" class="resize-y"></textarea>
+      <input type="text" id="question" placeholder="e.g., Can I terminate early?" aria-label="Question Input">
+      <button onclick="askQuestion()" aria-label="Ask Question" id="askQuestionBtn" class="disabled">Ask</button>
+      <button onclick="voiceInput('qa')" aria-label="Voice Input" style="padding: 0.5rem 1rem; margin-left: 0.5rem;">🎙️</button>
+      <div id="followup" aria-live="polite" class="mt-4"></div>
+      <button onclick="clearQA()" aria-label="Clear Q&A" id="clearQABtn" class="disabled">Clear</button>
+    </div>
+
+    <!-- Result -->
+    <div class="card" role="region" aria-label="Analysis Results">
+      <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; color: #1E3A8A;">📊 Results</h2>
+      <div id="data" style="display:none;"></div>
+      <div id="result"></div>
+      <div class="legend">
+        <span><span class="highlight-low">Low Risk</span></span>
+        <span><span class="highlight-medium">Medium Risk</span></span>
+        <span><span class="highlight-high">High Risk</span></span>
+      </div>
+
+      <!-- Ask Questions Section within Results -->
+      <h3 style="font-size: 1.25rem; font-weight: bold; margin-top: 1rem; color: #1E3A8A;">🤖 Ask Related Questions</h3>
+      <input type="text" id="resultQuestion" placeholder="e.g., What does this mean?" aria-label="Result Question Input" style="margin-top: 0.5rem;">
+      <button onclick="askResultQuestion()" aria-label="Ask Result Question" id="askResultBtn" class="disabled">Ask</button>
+      <button onclick="voiceInput('result')" aria-label="Voice Input" style="padding: 0.5rem 1rem; margin-left: 0.5rem;">🎙️</button>
+      <div id="resultFollowup" aria-live="polite" class="mt-4"></div>
+
+      <button onclick="downloadReport()" aria-label="Download PDF Report" style="margin-top: 1rem;" id="downloadBtn" class="disabled">⬇ Download PDF Report</button>
+      <button onclick="resetAll()" aria-label="Reset All" style="margin-top: 0.5rem;" id="resetAllBtn" class="disabled">Reset All</button>
+    </div>
+  </div>
+
+  <script>
+    let termsAgreed = true;
+
+    function switchTab(tabId) {
+      clearResult();
+      document.getElementById("textTab").style.display = "none";
+      document.getElementById("uploadTab").style.display = "none";
+      document.getElementById("qaTab").style.display = "none";
+      let tabs = document.getElementsByClassName("tab");
+      for (let i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove("active");
+        tabs[i].setAttribute("aria-selected", "false");
+      }
+      document.getElementById(tabId).style.display = "block";
+      event.target.classList.add("active");
+      event.target.setAttribute("aria-selected", "true");
+    }
+
+    function enableButtons() {
+      document.getElementById("analyzeBtn").classList.remove("disabled");
+      document.getElementById("clearTextBtn").classList.remove("disabled");
+      document.getElementById("compareBtn").classList.remove("disabled");
+      document.getElementById("clearFilesBtn").classList.remove("disabled");
+      document.getElementById("askQuestionBtn").classList.remove("disabled");
+      document.getElementById("clearQABtn").classList.remove("disabled");
+      document.getElementById("askResultBtn").classList.remove("disabled");
+      document.getElementById("downloadBtn").classList.remove("disabled");
+      document.getElementById("resetAllBtn").classList.remove("disabled");
+    }
+
+    function disableButtons() {
+      document.getElementById("analyzeBtn").classList.add("disabled");
+      document.getElementById("clearTextBtn").classList.add("disabled");
+      document.getElementById("compareBtn").classList.add("disabled");
+      document.getElementById("clearFilesBtn").classList.add("disabled");
+      document.getElementById("askQuestionBtn").classList.add("disabled");
+      document.getElementById("clearQABtn").classList.add("disabled");
+      document.getElementById("askResultBtn").classList.add("disabled");
+      document.getElementById("downloadBtn").classList.add("disabled");
+      document.getElementById("resetAllBtn").classList.add("disabled");
+    }
+
+    enableButtons();
+
+    async function analyzeText() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      let text = document.getElementById("legalText").value;
+      if (!text) {
+        alert("Please enter some text to analyze.");
+        return;
+      }
+      try {
+        let res = await fetch("/analyze", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({text})
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+        let data = await res.json();
+        displayResult(data);
+      } catch (e) {
+        alert("Error analyzing text: " + e.message);
+        console.error("Fetch error details:", e);
+      }
+    }
+
+    async function compareDocuments() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      let files = document.getElementById("fileInputs").files;
+      if (!files.length) {
+        alert("Please select at least one PDF file.");
+        return;
+      }
+      document.getElementById("progress").style.display = "block";
+      let formData = new FormData();
+      for (let file of files) formData.append("files", file);
+      try {
+        let res = await fetch("/compare", {method: "POST", body: formData});
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+        let data = await res.json();
+        displayComparison(data);
+      } catch (e) {
+        alert("Error comparing documents: " + e.message);
+        console.error("Fetch error details:", e);
+      } finally {
+        document.getElementById("progress").style.display = "none";
+      }
+    }
+
+    async function askQuestion() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      let text = document.getElementById("qaText").value;
+      let question = document.getElementById("question").value;
+      let context = document.getElementById("followup").innerText || "";
+      if (!text || !question) {
+        alert("Please provide both contract text and a question.");
+        return;
+      }
+      try {
+        let res = await fetch("/qa", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({text, question, context})
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+        let data = await res.json();
+        document.getElementById("followup").innerHTML += `<p class="mt-2"><b>Q:</b> ${question}<br><b>A:</b> ${data.answer}</p>`;
+        document.getElementById("question").value = "";
+      } catch (e) {
+        alert("Error asking question: " + e.message);
+        console.error("Fetch error details:", e);
+      }
+    }
+
+    async function askResultQuestion() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      let data = JSON.parse(document.getElementById("data").textContent || "{}");
+      let text = data.summary ? (Array.isArray(data.summary) ? data.summary.join("\n") : data.summary) : "";
+      let question = document.getElementById("resultQuestion").value;
+      let context = document.getElementById("resultFollowup").innerText || "";
+      if (!text || !question) {
+        alert("Please perform an analysis or comparison and provide a question.");
+        return;
+      }
+      try {
+        let res = await fetch("/qa", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({text, question, context})
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+        let data = await res.json();
+        document.getElementById("resultFollowup").innerHTML += `<p class="mt-2"><b>Q:</b> ${question}<br><b>A:</b> ${data.answer}</p>`;
+        document.getElementById("resultQuestion").value = "";
+      } catch (e) {
+        alert("Error asking question: " + e.message);
+        console.error("Fetch error details:", e);
+      }
+    }
+
+    async function voiceInput(section) {
+      try {
+        let res = await fetch("/voice", {method: "POST", timeout: 15000});
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status} - ${await res.text()}`);
+        let data = await res.json();
+        let question = data.result || data.summary || "";
+        if (section === 'qa') {
+          document.getElementById("question").value = question;
+          askQuestion();
+        } else if (section === 'result') {
+          document.getElementById("resultQuestion").value = question;
+          askResultQuestion();
+        } else if (section === 'text') {
+          document.getElementById("legalText").value = question;
+          analyzeText();
+        }
+      } catch (e) {
+        alert("Error with voice input: " + e.message);
+        console.error("Fetch error details:", e);
+      }
+    }
+
+    async function downloadReport() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      let data = JSON.parse(document.getElementById("data").textContent || "{}");
+      if (Object.keys(data).length === 0) {
+        alert("No data available to download. Please perform an analysis first.");
+        return;
+      }
+      try {
+        let res = await fetch("/download", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+          let errorText = await res.text();
+          throw new Error(`HTTP error! status: ${res.status} - ${errorText}`);
+        }
+        let blob = await res.blob();
+        let link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "legal_analysis.pdf";
+        link.click();
+      } catch (e) {
+        alert("Error downloading report: " + e.message);
+        console.error("Download error details:", e);
+      }
+    }
+
+    function displayResult(data) {
+      if (data.result) {
+        document.getElementById("result").innerHTML = `<p style="color: #DC2626;">${data.result}</p>`;
+        document.getElementById("data").textContent = "{}";
+        return;
+      }
+      let box = document.getElementById("result");
+      document.getElementById("data").textContent = JSON.stringify(data);
+      box.innerHTML = `
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">📋 Summary</div>
+        <div class="content">${data.summary || "No summary"}</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">📑 Key Clauses</div>
+        <div class="content"><ul>${Object.entries(data.clauses || {}).map(([k,v]) => `<li>${k}: ${v}</li>`).join('') || "<li>No clauses</li>"}</ul></div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">⚖️ Risk Level</div>
+        <div class="content">${data.risk?.level || "N/A"} (Score: ${data.risk?.score || "N/A"})</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">🟢 Simplified Version</div>
+        <div class="content">${data.simplified || "No simplification"}</div>
+        <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">🔥 Risk Heatmap</div>
+        <div class="content">${data.highlighted || "No heatmap"}</div>
+      `;
+    }
+
+    function displayComparison(data) {
+      let box = document.getElementById("result");
+      document.getElementById("data").textContent = JSON.stringify(data);
+      box.innerHTML = "";
+      data.summary.forEach((summary, i) => {
+        box.innerHTML += `
+          <h3 style="font-size: 1.25rem; font-weight: bold; margin-top: 1rem; color: #1E3A8A;">Document ${i+1}</h3>
+          <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">📋 Summary</div>
+          <div class="content">${summary || "No summary"}</div>
+          <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">📑 Key Clauses</div>
+          <div class="content"><ul>${Object.entries(data.clauses[i] || {}).map(([k,v]) => `<li>${k}: ${v}</li>`).join('') || "<li>No clauses</li>"}</ul></div>
+          <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementById('simplified'); content.style.display = content.style.display === 'block' ? 'none' : 'block';">⚖️ Risk Level</div>
+          <div class="content">${data.risk[i]?.level || "N/A"} (Score: ${data.risk[i]?.score || "N/A"})</div>
+          <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">🟢 Simplified Version</div>
+          <div class="content">${data.simplified[i] || "No simplification"}</div>
+          <div class="collapsible" onclick="this.classList.toggle('active'); var content = this.nextElementSibling; content.style.display = content.style.display === 'block' ? 'none' : 'block';">🔥 Risk Heatmap</div>
+          <div class="content">${data.highlighted[i] || "No heatmap"}</div>
+        `;
+      });
+    }
+
+    function clearText() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      document.getElementById("legalText").value = "";
+      clearResult();
+    }
+    function clearFiles() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      document.getElementById("fileInputs").value = "";
+      clearResult();
+    }
+    function clearQA() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      document.getElementById("qaText").value = "";
+      document.getElementById("question").value = "";
+      document.getElementById("followup").innerHTML = "";
+      clearResult();
+    }
+    function clearResult() { document.getElementById("result").innerHTML = ""; document.getElementById("data").textContent = "{}"; document.getElementById("resultQuestion").value = ""; document.getElementById("resultFollowup").innerHTML = ""; }
+    function resetAll() {
+      if (!termsAgreed) {
+        alert("Please agree to proceed first.");
+        return;
+      }
+      clearText();
+      clearFiles();
+      clearQA();
+      clearResult();
+      document.getElementById("followup").innerHTML = "";
+      termsAgreed = false;
+      window.location.href = "/";
+    }
+  </script>
